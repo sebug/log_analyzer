@@ -1,5 +1,5 @@
 ### Log Analyzer
-Exploration in ASP.NET core to analyze performance counters from log entries.
+Exploration in ASP.NET core to analyze performance counters from log entries. Based on this blog entry: https://www.hanselman.com/blog/ExploringASPNETCoreWithDockerInBothLinuxAndWindowsContainers.aspx
 
 To run:
 
