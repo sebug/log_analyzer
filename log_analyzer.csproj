@@ -7,6 +7,8 @@
   <ItemGroup>
     <Folder Include="wwwroot\" />
     <Folder Include="Configuration\" />
+    <Folder Include="Parsing\" />
+    <Folder Include="Models\" />
   </ItemGroup>
 
   <ItemGroup>

@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using log_analyzer.Configuration;
+using log_analyzer.Models;
+using log_analyzer.Parsing;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
@@ -23,42 +25,45 @@ namespace log_analyzer.Controllers
 			this._fileProvider = new PhysicalFileProvider(_optionsAccessor.Value.Directory);
 		}
 
-		public async Task<string> GetContent(Stream readStream)
+		protected IEnumerable<IFileInfo> GetLogEntries(string basePath)
 		{
-			string ct = await new StreamReader(readStream).ReadToEndAsync();
-
-			readStream.Dispose();
-
-			return ct;
-		}
-
-		public IEnumerable<Task<string>> GetLogFileContents(IDirectoryContents directoryContents)
-		{
-			foreach (var entry in directoryContents)
+			var fileEntries = this._fileProvider.GetDirectoryContents(basePath);
+			foreach (var fileEntry in fileEntries)
 			{
-				if (entry.IsDirectory)
+				if (fileEntry.IsDirectory)
 				{
-					var subItems = _fileProvider.GetDirectoryContents(entry.Name);
-					IEnumerable<Task<string>> subTasks = GetLogFileContents(subItems);
-
-					foreach (var st in subTasks)
+					var subItems = GetLogEntries(fileEntry.Name);
+					foreach (var si in subItems)
 					{
-						yield return st;
+						yield return si;
 					}
 				}
 				else
 				{
-					yield return GetContent(entry.CreateReadStream());
+					yield return fileEntry;
 				}
 			}
 		}
 
-		[HttpGet]
-		public async Task<IEnumerable<string>> Get()
+		public async Task<IEnumerable<LogEntryModel>> GetContent(Stream readStream)
 		{
-			var tasks = GetLogFileContents(_fileProvider.GetDirectoryContents(""));
+			var items = await new LogEntryParser().Parse(readStream);
+			readStream.Dispose();
 
-			return await Task.WhenAll(tasks.Take(10));
+			return items;
+		}
+
+		[HttpGet]
+		public async Task<IEnumerable<LogEntryModel>> Get(int start = 0, int size = 1)
+		{
+			var logItems = GetLogEntries("");
+
+			var tasks = logItems.OrderBy(fi => fi.Name).Select(li => GetContent(li.CreateReadStream()));
+
+
+			var result = await Task.WhenAll(tasks.Skip(start).Take(size));
+
+			return result.SelectMany(items => items);
 		}
 	}
 }
