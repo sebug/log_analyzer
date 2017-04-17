@@ -13,5 +13,5 @@ or in Docker:
 	docker run -v yourlogdirectory:/mnt/logs -it -d -p 4999:80 loganalyzer
 
 After that, you can poll the log entries:
-	url http://localhost:4999/api/LogEntry?start=5
+	curl http://localhost:4999/api/LogEntry?start=5
 
